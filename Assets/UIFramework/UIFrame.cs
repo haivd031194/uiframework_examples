@@ -81,6 +81,10 @@ namespace deVoid.UIFramework
         /// </summary>
         /// <param name="screenId">Panel Id</param>
         public void ShowPanel(string screenId) {
+            if (!panelLayer.IsScreenRegistered(screenId))
+            {
+                AutoRegisterScreen(screenId);
+            }
             panelLayer.ShowScreenById(screenId);
         }
 
@@ -92,6 +96,10 @@ namespace deVoid.UIFramework
         /// <typeparam name="T">The type of properties to be passed in.</typeparam>
         /// <seealso cref="IPanelProperties"/>
         public void ShowPanel<T>(string screenId, T properties) where T : IPanelProperties {
+            if (!panelLayer.IsScreenRegistered(screenId))
+            {
+                AutoRegisterScreen(screenId);
+            }
             panelLayer.ShowScreenById<T>(screenId, properties);
         }
 
@@ -108,6 +116,10 @@ namespace deVoid.UIFramework
         /// </summary>
         /// <param name="screenId">Identifier.</param>
         public void OpenWindow(string screenId) {
+            if (!windowLayer.IsScreenRegistered(screenId))
+            {
+                AutoRegisterScreen(screenId);
+            }
             windowLayer.ShowScreenById(screenId);
         }
 
@@ -136,6 +148,10 @@ namespace deVoid.UIFramework
         /// <typeparam name="T">The type of properties to be passed in.</typeparam>
         /// <seealso cref="IWindowProperties"/>
         public void OpenWindow<T>(string screenId, T properties) where T : IWindowProperties {
+            if (!windowLayer.IsScreenRegistered(screenId))
+            {
+                AutoRegisterScreen(screenId);
+            }
             windowLayer.ShowScreenById<T>(screenId, properties);
         }
 
@@ -156,6 +172,22 @@ namespace deVoid.UIFramework
             else {
                 Debug.LogError(string.Format("Tried to open Screen id {0} but it's not registered as Window or Panel!",
                     screenId));
+            }
+        }
+
+        private void AutoRegisterScreen(string screenId)
+        {
+            var screenInstance = Instantiate(Resources.Load<GameObject>(screenId));
+            var screenController = screenInstance.GetComponent<IUIScreenController>();
+
+            if (screenController != null)
+            {
+                RegisterScreen(screenId, screenController, screenInstance.transform);
+                screenInstance.SetActive(false);
+            }
+            else
+            {
+                Debug.LogError("[UIConfig] Screen doesn't contain a ScreenController! Skipping " + screenId);
             }
         }
 

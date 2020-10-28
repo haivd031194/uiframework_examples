@@ -7,7 +7,8 @@ namespace deVoid.UIFramework.Examples
 {
     public class UIDemoController : MonoBehaviour
     {
-        [SerializeField] private UISettings defaultUISettings = null;
+        [Tooltip("Prefab for the UI Frame structure itself")]
+        [SerializeField] private UIFrame templateUIPrefab = null;
         [SerializeField] private FakePlayerData fakePlayerData = null;
         [SerializeField] private Camera cam = null;
         [SerializeField] private Transform transformToFollow = null;
@@ -15,7 +16,7 @@ namespace deVoid.UIFramework.Examples
         private UIFrame uiFrame;
 
         private void Awake() {
-            uiFrame = defaultUISettings.CreateUIInstance();
+            uiFrame = Instantiate(templateUIPrefab);
             Signals.Get<StartDemoSignal>().AddListener(OnStartDemo);
             Signals.Get<NavigateToWindowSignal>().AddListener(OnNavigateToWindow);
             Signals.Get<ShowConfirmationPopupSignal>().AddListener(OnShowConfirmationPopup);
