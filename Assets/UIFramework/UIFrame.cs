@@ -8,7 +8,7 @@ namespace deVoid.UIFramework
     /// This is the centralized access point for all things UI.
     /// All your calls should be directed at this.
     /// </summary>
-    public class UIFrame : MonoBehaviour
+    public class UIFrame : Singleton<UIFrame>
     {
         [Tooltip("Set this to false if you want to manually initialize this UI Frame.")]
         [SerializeField] private bool initializeOnAwake = true;
@@ -18,6 +18,7 @@ namespace deVoid.UIFramework
 
         private Canvas mainCanvas;
         private GraphicRaycaster graphicRaycaster;
+        private CanvasScaler mainCanvasScaler;
 
         /// <summary>
         /// The main canvas of this UI
@@ -31,6 +32,20 @@ namespace deVoid.UIFramework
                 return mainCanvas;
             }
         }
+        /// <summary>
+        /// The main canvas scaler of this UI
+        /// </summary>
+        public CanvasScaler MainCanvasScaler {
+            get
+            {
+                if (mainCanvasScaler == null)
+                {
+                    mainCanvasScaler = GetComponent<CanvasScaler>();
+                }
+
+                return mainCanvasScaler;
+            }
+        }
 
         /// <summary>
         /// The Camera being used by the Main UI Canvas
@@ -38,6 +53,8 @@ namespace deVoid.UIFramework
         public Camera UICamera {
             get { return MainCanvas.worldCamera; }
         }
+
+        
 
         private void Awake() {
             if (initializeOnAwake) {
