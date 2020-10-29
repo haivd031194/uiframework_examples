@@ -17,7 +17,7 @@ public class BackgroundScaler : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        if(Screen.orientation == ScreenOrientation.Landscape)
+        if(ScreenUtils.IsLandscape)
         {
             FitHorizontalCanvasScaler();
         }
