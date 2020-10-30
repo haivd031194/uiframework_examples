@@ -9,14 +9,7 @@
         public static bool IsLandscape
         {
             get {
-                if (Application.isMobilePlatform)
-                {
-                    return Screen.orientation == ScreenOrientation.LandscapeLeft || Screen.orientation == ScreenOrientation.LandscapeRight;
-                }
-                else
-                {
-                    return true;
-                }
+                return Screen.width > Screen.height;
             }
         }
     }
