@@ -16,12 +16,9 @@ public class UISafeArea : MonoBehaviour
     /// </summary>
     private RectTransform rectTransform;
 
-    private UIFrame uiFrame;
-
     // Start is called before the first frame update
     void Awake()
     {
-        uiFrame = UIFrame.Instance;
         rectTransform = GetComponent<RectTransform>();
     }
 
@@ -63,7 +60,7 @@ public class UISafeArea : MonoBehaviour
                 throw new System.Exception("Orientation is not support now" + Screen.orientation.ToString());
         }
 
-        var scalerRect = uiFrame.MainCanvasScaler.referenceResolution;
+        var scalerRect = UIFrame.Instance.MainCanvasScaler.referenceResolution;
         var scalerRatio = scalerRect.x / scalerRect.y;
         var screenRatio = (float)Screen.width / Screen.height;
         

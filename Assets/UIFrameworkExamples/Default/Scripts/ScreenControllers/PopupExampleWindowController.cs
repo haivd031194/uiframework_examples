@@ -23,7 +23,7 @@ namespace deVoid.UIFramework.Examples
         }
 
         public void UI_ShowPopup() {
-            Signals.Get<ShowConfirmationPopupSignal>().Dispatch(GetPopupData());
+            UIFrame.Instance.OpenWindow(ScreenIds.ConfirmationPopup, GetPopupData());
         }
 
         private ConfirmationPopupProperties GetPopupData() {

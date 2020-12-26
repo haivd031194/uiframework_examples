@@ -21,7 +21,7 @@ namespace deVoid.UIFramework.Examples
         [SerializeField] 
         private UIFollowComponent followTemplate = null;
 
-        private List<UIFollowComponent> allElements = new List<UIFollowComponent>();
+        private readonly List<UIFollowComponent> allElements = new List<UIFollowComponent>();
 
         protected override void OnPropertiesSet() {
             CreateNewLabel(Properties.TransformToFollow,"Look at me!", null);

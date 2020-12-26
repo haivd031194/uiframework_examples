@@ -21,11 +21,10 @@ namespace SE.UIFramework.Examples
         private void LoadUiFrame()
         {
             var uiFrameName = "UIFrame";
-            var uiFramePrefab = Resources.Load<GameObject>(uiFrameName);
+            var uiFramePrefab = Resources.Load<UIFrame>(uiFrameName);
             if (uiFramePrefab)
             {
-                Instantiate(uiFramePrefab);
-                uiFrame = UIFrame.Instance;
+                uiFrame = Instantiate(uiFramePrefab);
             }
             else
             {

@@ -12,17 +12,11 @@ public class NavigationPanelEntry
     [SerializeField] private string buttonText = "";
     [SerializeField] private string targetScreen = "";
     
-    public Sprite Sprite {
-        get { return sprite; }
-    }
+    public Sprite Sprite => sprite;
 
-    public string ButtonText {
-        get { return buttonText; }
-    }
+    public string ButtonText => buttonText;
 
-    public string TargetScreen {
-        get { return targetScreen; }
-    }
+    public string TargetScreen => targetScreen;
 }
 
 public class NavigateToWindowSignal : ASignal<string> { }
@@ -52,14 +46,13 @@ public class NavigationPanelController : APanelController
     protected override void OnPropertiesSet() {
         ClearEntries();
         foreach (var target in navigationTargets) {
-            var newBtn = Instantiate(templateButton);
+            var newBtn = Instantiate(templateButton, templateButton.transform.parent, false);
             // When using UI, never forget to pass the parameter
             // worldPositionStays as FALSE, otherwise your RectTransform
             // won't layout properly after reparenting.
             // This is the cause for the most common head-scratching issues
             // when starting to deal with Unity UI: adding objects via the editor
             // working fine but objects instanced via code having broken sizes/positions
-            newBtn.transform.SetParent(templateButton.transform.parent, false); 
             newBtn.SetData(target);
             newBtn.gameObject.SetActive(true);
             newBtn.ButtonClicked += OnNavigationButtonClicked;
@@ -71,9 +64,49 @@ public class NavigationPanelController : APanelController
     }
 
     private void OnNavigationButtonClicked(NavigationPanelButton currentlyClickedButton) {
-        Signals.Get<NavigateToWindowSignal>().Dispatch(currentlyClickedButton.Target);
+        // Signals.Get<NavigateToWindowSignal>().Dispatch(currentlyClickedButton.Target);
+        
+        OnNavigateToWindow(currentlyClickedButton.Target);
+        
         foreach (var button in currentButtons) {
             button.SetCurrentNavigationTarget(currentlyClickedButton);
+        }
+    }
+
+    private FakePlayerData fakePlayerData;
+
+    private Transform hero;
+    private void OnNavigateToWindow(string windowId) {
+        // You usually don't have to do this as the system takes care of everything
+        // automatically, but since we're dealing with navigation and the Window layer
+        // has a history stack, this way we can make sure we're not just adding
+        // entries to the stack indefinitely
+        UIFrame.Instance.CloseCurrentWindow();
+
+        switch (windowId) {
+            case ScreenIds.PlayerWindow:
+                if (fakePlayerData == null)
+                {
+                    fakePlayerData = Resources.Load<FakePlayerData>("PlayerData");
+                }
+
+                UIFrame.Instance.OpenWindow(windowId, new PlayerWindowProperties(fakePlayerData.LevelProgress));
+                
+                break;
+            case ScreenIds.CameraProjectionWindow:
+                if (hero == null)
+                {
+                    hero = Instantiate(Resources.Load<Transform>("Prefabs/GamePlay/HeroCapsule"));
+                }
+                hero.gameObject.SetActive(true);
+                
+                UIFrame.Instance.OpenWindow(windowId, new CameraProjectionWindowProperties(Camera.main, hero.Find("EyePosition")));
+                
+                break;
+            default:
+                
+                UIFrame.Instance.OpenWindow(windowId);
+                break;
         }
     }
 
