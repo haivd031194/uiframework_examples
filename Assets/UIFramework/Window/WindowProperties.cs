@@ -13,7 +13,7 @@ namespace deVoid.UIFramework {
         protected WindowPriority windowQueuePriority = WindowPriority.ForceForeground;
 
         [SerializeField]
-        protected bool isPopup = false;
+        protected bool isPopup;
 
         public WindowProperties() {
             hideOnForegroundLost = true;
@@ -28,8 +28,8 @@ namespace deVoid.UIFramework {
         /// <value>Force Foreground opens it immediately, Enqueue queues it so that it's opened as soon as
         /// the current one is closed. </value>
         public WindowPriority WindowQueuePriority {
-            get { return windowQueuePriority; }
-            set { windowQueuePriority = value; }
+            get => windowQueuePriority;
+            set => windowQueuePriority = value;
         }
 
         /// <summary>
@@ -37,8 +37,8 @@ namespace deVoid.UIFramework {
         /// </summary>
         /// <value><c>true</c> if hide on foreground lost; otherwise, <c>false</c>.</value>
         public bool HideOnForegroundLost {
-            get { return hideOnForegroundLost; }
-            set { hideOnForegroundLost = value; }
+            get => hideOnForegroundLost;
+            set => hideOnForegroundLost = value;
         }
 
         /// <summary>
@@ -54,8 +54,8 @@ namespace deVoid.UIFramework {
         /// </summary>
         /// <value><c>true</c> if this window is a popup; otherwise, <c>false</c>.</value>
         public bool IsPopup {
-            get { return isPopup; }
-            set { isPopup = value; }
+            get => isPopup;
+            set => isPopup = value;
         }
 
         public WindowProperties(bool suppressPrefabProperties = false) {

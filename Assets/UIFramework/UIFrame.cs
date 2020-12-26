@@ -169,7 +169,7 @@ namespace deVoid.UIFramework
             {
                 AutoRegisterScreen(screenId);
             }
-            windowLayer.ShowScreenById<T>(screenId, properties);
+            windowLayer.ShowScreenById(screenId, properties);
         }
 
         /// <summary>

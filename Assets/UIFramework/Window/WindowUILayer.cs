@@ -11,7 +11,7 @@ namespace deVoid.UIFramework
     /// </summary>
     public class WindowUILayer : AUILayer<IWindowController>
     {
-        [SerializeField] private WindowParaLayer priorityParaLayer = null;
+        [SerializeField] private WindowParaLayer priorityParaLayer;
 
         public IWindowController CurrentWindow { get; private set; }
         
@@ -21,9 +21,7 @@ namespace deVoid.UIFramework
         public event Action RequestScreenBlock;
         public event Action RequestScreenUnblock;
 
-        private bool IsScreenTransitionInProgress {
-            get { return screensTransitioning.Count != 0; }
-        }
+        private bool IsScreenTransitionInProgress => screensTransitioning.Count != 0;
 
         private HashSet<IUIScreenController> screensTransitioning;
 
@@ -81,9 +79,7 @@ namespace deVoid.UIFramework
             }
             else {
                 Debug.LogError(
-                    string.Format(
-                        "[WindowUILayer] Hide requested on WindowId {0} but that's not the currently open one ({1})! Ignoring request.",
-                        screen.ScreenId, CurrentWindow != null ? CurrentWindow.ScreenId : "current is null"));
+                    $"[WindowUILayer] Hide requested on WindowId {screen.ScreenId} but that's not the currently open one ({(CurrentWindow != null ? CurrentWindow.ScreenId : "current is null")})! Ignoring request.");
             }
         }
 
@@ -151,12 +147,10 @@ namespace deVoid.UIFramework
         private void DoShow(WindowHistoryEntry windowEntry) {
             if (CurrentWindow == windowEntry.Screen) {
                 Debug.LogWarning(
-                    string.Format(
-                        "[WindowUILayer] The requested WindowId ({0}) is already open! This will add a duplicate to the " +
-                        "history and might cause inconsistent behaviour. It is recommended that if you need to open the same" +
-                        "screen multiple times (eg: when implementing a warning message pop-up), it closes itself upon the player input" +
-                        "that triggers the continuation of the flow."
-                        , CurrentWindow.ScreenId));
+                    $"[WindowUILayer] The requested WindowId ({CurrentWindow.ScreenId}) is already open! This will add a duplicate to the " +
+                    "history and might cause inconsistent behaviour. It is recommended that if you need to open the same" +
+                    "screen multiple times (eg: when implementing a warning message pop-up), it closes itself upon the player input" +
+                    "that triggers the continuation of the flow.");
             }
             else if (CurrentWindow != null
                      && CurrentWindow.HideOnForegroundLost
@@ -182,8 +176,7 @@ namespace deVoid.UIFramework
 
         private void OnOutAnimationFinished(IUIScreenController screen) {
             RemoveTransition(screen);
-            var window = screen as IWindowController;
-            if (window.IsPopup) {
+            if (screen is IWindowController window && window.IsPopup) {
                 priorityParaLayer.RefreshDarken();
             }
         }
@@ -194,17 +187,14 @@ namespace deVoid.UIFramework
 
         private void AddTransition(IUIScreenController screen) {
             screensTransitioning.Add(screen);
-            if (RequestScreenBlock != null) {
-                RequestScreenBlock();
-            }
+            RequestScreenBlock?.Invoke();
         }
 
         private void RemoveTransition(IUIScreenController screen) {
             screensTransitioning.Remove(screen);
-            if (!IsScreenTransitionInProgress) {
-                if (RequestScreenUnblock != null) {
-                    RequestScreenUnblock();
-                }
+            if (!IsScreenTransitionInProgress)
+            {
+                RequestScreenUnblock?.Invoke();
             }
         }
     }

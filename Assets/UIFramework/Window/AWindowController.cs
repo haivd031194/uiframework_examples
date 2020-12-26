@@ -14,17 +14,11 @@
     public abstract class AWindowController<TProps> : AUIScreenController<TProps>, IWindowController
         where TProps : IWindowProperties
     {
-        public bool HideOnForegroundLost {
-            get { return Properties.HideOnForegroundLost; }
-        }
+        public bool HideOnForegroundLost => Properties.HideOnForegroundLost;
 
-        public bool IsPopup {
-            get { return Properties.IsPopup; }
-        }
+        public bool IsPopup => Properties.IsPopup;
 
-        public WindowPriority WindowPriority {
-            get { return Properties.WindowQueuePriority; }
-        }
+        public WindowPriority WindowPriority => Properties.WindowQueuePriority;
 
         /// <summary>
         /// Requests this Window to be closed, handy for rigging it directly in the Editor.
@@ -34,7 +28,7 @@
         /// This is *not* called every time it is closed, just upon user input - for that behaviour, see
         /// WhileHiding();
         /// </summary>
-        public virtual void UI_Close() {
+        public virtual void UiClose() {
             CloseRequest(this);
         }
         

@@ -27,14 +27,14 @@ namespace deVoid.UIFramework.Examples
         }
 
         public void UI_Confirm() {
-            UI_Close();
+            UiClose();
             if (Properties.ConfirmAction != null) {
                 Properties.ConfirmAction();
             }
         }
 
         public void UI_Cancel() {
-            UI_Close();
+            UiClose();
             if (Properties.CancelAction != null) {
                 Properties.CancelAction();
             }

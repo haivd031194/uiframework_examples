@@ -1,4 +1,5 @@
-﻿using deVoid.UIFramework;
+﻿using System;
+using deVoid.UIFramework;
 using System.CodeDom;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
@@ -26,8 +27,8 @@ namespace SE.UIFramework.Editor
     /// </summary>
     public class ScreenIdProcessor : AssetPostprocessor
     {
-        private const string UIPrefabFolder = "Assets/UIFrameworkExamples/SE/Resources/Prefabs/Screens";
-        private const string UIIdScriptFolder = "Assets/UIFrameworkExamples/SE/Scripts";
+        private const string UiPrefabFolder = "Assets/UIFrameworkExamples/SE/Resources/Prefabs/Screens";
+        private const string UiIdScriptFolder = "Assets/UIFrameworkExamples/SE/Scripts";
         private const string ScreenIdScriptName = "ScreenIds";
         private const string ScreenIdScriptNamespace = "SE.UIFramework.Examples";
 
@@ -42,7 +43,7 @@ namespace SE.UIFramework.Editor
         {
             foreach (string str in importedAssets)
             {
-                if (str.Contains(UIPrefabFolder))
+                if (str.Contains(UiPrefabFolder))
                 {
                     RegenerateScreenIds(true);
                     return;
@@ -51,7 +52,7 @@ namespace SE.UIFramework.Editor
 
             foreach (string str in deletedAssets)
             {
-                if (str.Contains(UIPrefabFolder))
+                if (str.Contains(UiPrefabFolder))
                 {
                     RegenerateScreenIds(true);
                     return;
@@ -60,8 +61,8 @@ namespace SE.UIFramework.Editor
 
             for (int i = 0; i < movedAssets.Length; i++)
             {
-                if (movedAssets[i].Contains(UIPrefabFolder)
-                    || movedFromAssetPaths[i].Contains(UIPrefabFolder))
+                if (movedAssets[i].Contains(UiPrefabFolder)
+                    || movedFromAssetPaths[i].Contains(UiPrefabFolder))
                 {
                     RegenerateScreenIds(true);
                     return;
@@ -69,10 +70,10 @@ namespace SE.UIFramework.Editor
             }
         }
 
-        public static void RegenerateScreenIds(bool refreshAssetDatabase)
+        private static void RegenerateScreenIds(bool refreshAssetDatabase)
         {
             Dictionary<string, string> paths = new Dictionary<string, string>();
-            var assets = AssetDatabase.FindAssets("t:prefab", new[] { UIPrefabFolder });
+            var assets = AssetDatabase.FindAssets("t:prefab", new[] { UiPrefabFolder });
             foreach (var asset in assets)
             {
                 string path = AssetDatabase.GUIDToAssetPath(asset);
@@ -84,9 +85,7 @@ namespace SE.UIFramework.Editor
                     if (paths.ContainsKey(name))
                     {
                         Debug.LogError(
-                            string.Format(
-                                "You have multiple screen prefabs with the same name: {0}! Locations: (1){1}, (2){2}",
-                                name, paths[name], path));
+                            $"You have multiple screen prefabs with the same name: {name}! Locations: (1){paths[name]}, (2){path}");
                     }
                     else
                     {
@@ -99,11 +98,11 @@ namespace SE.UIFramework.Editor
                     }
                 }else
                 {
-                    throw new System.Exception("Prefab must includes IUIScreenController: " + path);
+                    throw new Exception("Prefab must includes IUIScreenController: " + path);
                 }
             }
 
-            var scripts = AssetDatabase.FindAssets(string.Format("t:script {0}", ScreenIdScriptName), new[] { UIIdScriptFolder });
+            var scripts = AssetDatabase.FindAssets($"t:script {ScreenIdScriptName}", new[] { UiIdScriptFolder });
             if (scripts.Length > 0)
             {
                 string filePath = AssetDatabase.GUIDToAssetPath(scripts[0]);
@@ -134,7 +133,6 @@ namespace SE.UIFramework.Editor
 
             foreach (var idPathPair in idPaths)
             {
-                var popupPath = idPathPair.Value;
                 var idField = new CodeMemberField(typeof(string), idPathPair.Key)
                 {
                     Attributes = MemberAttributes.Public | MemberAttributes.Const,
@@ -150,8 +148,8 @@ namespace SE.UIFramework.Editor
         private static string GetPopupShortPath(string fullPath)
         {
             int resourcesLength = "Resources/".Length;
-            int indexOfResources = fullPath.IndexOf("Resources/");
-            int indexOfPrefab = fullPath.IndexOf(".prefab");
+            int indexOfResources = fullPath.IndexOf("Resources/", StringComparison.Ordinal);
+            int indexOfPrefab = fullPath.IndexOf(".prefab", StringComparison.Ordinal);
             Debug.AssertFormat(indexOfResources >= 0 && indexOfPrefab >= 0 && indexOfResources < indexOfPrefab,
                 "Path is not valid: Prefab needs in Resources folder: {0}", fullPath);
             return fullPath.Substring(indexOfResources + resourcesLength, indexOfPrefab - indexOfResources - resourcesLength);
