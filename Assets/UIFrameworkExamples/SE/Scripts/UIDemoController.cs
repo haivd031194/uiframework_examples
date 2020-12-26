@@ -10,31 +10,21 @@ namespace SE.UIFramework.Examples
 
         private void Awake() 
         {
-            LoadUIFrame();
+            LoadUiFrame();
         }
 
         private void Start()
         {
-            uiFrame.OpenWindow(ScreenUtils.IsLandscape ? ScreenIds.TapToPlayWindow : ScreenIds.TapToPlayWindowV);
+            uiFrame.OpenWindow(ScreenIds.TapToPlayWindow);
         }
 
-        private void Update()
+        private void LoadUiFrame()
         {
-            
-        }
-
-        private void OnDestroy() 
-        {
-
-        }
-
-        private void LoadUIFrame()
-        {
-            var uiFrameName = ScreenUtils.IsLandscape ? "DemoPrefabs/H_UIFrame" : "DemoPrefabs/V_UIFrame";
+            var uiFrameName = "UIFrame";
             var uiFramePrefab = Resources.Load<GameObject>(uiFrameName);
             if (uiFramePrefab)
             {
-                Instantiate<GameObject>(uiFramePrefab);
+                Instantiate(uiFramePrefab);
                 uiFrame = UIFrame.Instance;
             }
             else

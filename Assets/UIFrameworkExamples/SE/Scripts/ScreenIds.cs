@@ -14,7 +14,5 @@ namespace SE.UIFramework.Examples {
     public sealed class ScreenIds {
         
         public const string TapToPlayWindow = "Prefabs/Screens/TapToPlayWindow";
-        
-        public const string TapToPlayWindowV = "Prefabs/Screens/TapToPlayWindowV";
     }
 }

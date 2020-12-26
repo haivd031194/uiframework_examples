@@ -8,4 +8,7 @@ EditorBuildSettings:
   - enabled: 0
     path: 
     guid: 00000000000000000000000000000000
+  - enabled: 1
+    path: Assets/UIFrameworkExamples/SE/SE.unity
+    guid: a7f4666e3e9782244acbf79f66a35beb
   m_configObjects: {}
