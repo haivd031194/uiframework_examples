@@ -14,5 +14,9 @@ namespace deVoid.UIFramework.Examples.WordChef {
     public sealed class ScreenIds {
         
         public const string HomeWindow = "Prefabs/Screens/HomeWindow";
+        
+        public const string SelectWorldWindow = "Prefabs/Screens/SelectWorldWindow";
+        
+        public const string ShopWindow = "Prefabs/Screens/ShopWindow";
     }
 }
