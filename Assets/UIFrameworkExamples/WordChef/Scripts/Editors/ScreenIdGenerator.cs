@@ -26,7 +26,7 @@ namespace deVoid.UIFramework.Examples.WordChef.Editor
     public class ScreenIdProcessor : AssetPostprocessor
     {
         private const string UIPrefabFolder = "Assets/UIFrameworkExamples/WordChef/Resources/Prefabs/Screens";
-        private const string UIIdScriptFolder = "Assets/UIFrameworkExamples/WordChef/Scripts";
+        private const string UIIdScriptFolder = "/UIFrameworkExamples/WordChef/Scripts";
         private const string ScreenIdScriptName = "ScreenIds";
         private const string ScreenIdScriptNamespace = "deVoid.UIFramework.Examples.WordChef";
 
@@ -102,19 +102,12 @@ namespace deVoid.UIFramework.Examples.WordChef.Editor
                 }
             }
 
-            var scripts = AssetDatabase.FindAssets(string.Format("t:script {0}", ScreenIdScriptName), new[] { UIIdScriptFolder });
-            if (scripts.Length > 0)
+            // var scripts = AssetDatabase.FindAssets($"t:script {ScreenIdScriptName}", new[] { UIIdScriptFolder });
+            var filePath = $"{Application.dataPath}{UIIdScriptFolder}/{ScreenIdScriptName}.cs";
+            WriteIdClass(paths, filePath);
+            if (refreshAssetDatabase)
             {
-                string filePath = AssetDatabase.GUIDToAssetPath(scripts[0]);
-                WriteIdClass(paths, filePath);
-                if (refreshAssetDatabase)
-                {
-                    AssetDatabase.Refresh();
-                }
-            }
-            else
-            {
-                Debug.LogError("Could not find ScreenIds script file! Create the file and try again.");
+                AssetDatabase.Refresh();
             }
         }
 
