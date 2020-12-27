@@ -1,13 +1,9 @@
 ﻿using System;
-using deVoid.Utils;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace deVoid.UIFramework.Examples
 {
-    public class ShowConfirmationPopupSignal : ASignal<ConfirmationPopupProperties> { }
-    
     [Serializable]
     public class ConfirmationPopupController: AWindowController<ConfirmationPopupProperties>
     {
@@ -26,18 +22,14 @@ namespace deVoid.UIFramework.Examples
 
         }
 
-        public void UI_Confirm() {
-            UiClose();
-            if (Properties.ConfirmAction != null) {
-                Properties.ConfirmAction();
-            }
+        public void UIConfirm() {
+            UIClose();
+            Properties.ConfirmAction?.Invoke();
         }
 
-        public void UI_Cancel() {
-            UiClose();
-            if (Properties.CancelAction != null) {
-                Properties.CancelAction();
-            }
+        public void UICancel() {
+            UIClose();
+            Properties.CancelAction?.Invoke();
         }
     }
     

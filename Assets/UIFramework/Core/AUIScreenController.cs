@@ -37,8 +37,8 @@ namespace deVoid.UIFramework
         /// </summary>
         public ATransitionComponent AnimIn
         {
-            get { return animIn; }
-            set { animIn = value; }
+            get => animIn;
+            set => animIn = value;
         }
 
         /// <summary>
@@ -46,8 +46,8 @@ namespace deVoid.UIFramework
         /// </summary>
         public ATransitionComponent AnimOut
         {
-            get { return animOut; }
-            set { animOut = value; }
+            get => animOut;
+            set => animOut = value;
         }
 
         /// <summary>
@@ -85,8 +85,8 @@ namespace deVoid.UIFramework
         /// <value>The properties.</value>
         protected TProps Properties
         {
-            get { return properties; }
-            set { properties = value; }
+            get => properties;
+            set => properties = value;
         }
 
         protected virtual void Awake()
@@ -96,10 +96,7 @@ namespace deVoid.UIFramework
 
         protected virtual void OnDestroy()
         {
-            if (ScreenDestroyed != null)
-            {
-                ScreenDestroyed(this);
-            }
+            ScreenDestroyed?.Invoke(this);
 
             InTransitionFinished = null;
             OutTransitionFinished = null;
@@ -175,9 +172,9 @@ namespace deVoid.UIFramework
         {
             if (props != null)
             {
-                if (props is TProps)
+                if (props is TProps screenProperties)
                 {
-                    SetProperties((TProps) props);
+                    SetProperties(screenProperties);
                 }
                 else
                 {
@@ -196,10 +193,7 @@ namespace deVoid.UIFramework
             }
             else
             {
-                if (InTransitionFinished != null)
-                {
-                    InTransitionFinished(this);
-                }
+                InTransitionFinished?.Invoke(this);
             }
         }
 
@@ -208,10 +202,7 @@ namespace deVoid.UIFramework
             if (caller == null)
             {
                 gameObject.SetActive(isVisible);
-                if (callWhenFinished != null)
-                {
-                    callWhenFinished();
-                }
+                callWhenFinished?.Invoke();
             }
             else
             {
@@ -228,10 +219,7 @@ namespace deVoid.UIFramework
         {
             IsVisible = true;
 
-            if (InTransitionFinished != null)
-            {
-                InTransitionFinished(this);
-            }
+            InTransitionFinished?.Invoke(this);
         }
 
         private void OnTransitionOutFinished()
@@ -239,10 +227,7 @@ namespace deVoid.UIFramework
             IsVisible = false;
             gameObject.SetActive(false);
 
-            if (OutTransitionFinished != null)
-            {
-                OutTransitionFinished(this);
-            }
+            OutTransitionFinished?.Invoke(this);
         }
     }
 }

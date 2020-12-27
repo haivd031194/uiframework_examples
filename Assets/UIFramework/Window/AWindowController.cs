@@ -28,7 +28,7 @@
         /// This is *not* called every time it is closed, just upon user input - for that behaviour, see
         /// WhileHiding();
         /// </summary>
-        public virtual void UiClose() {
+        public virtual void UIClose() {
             CloseRequest(this);
         }
         

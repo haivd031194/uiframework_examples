@@ -121,7 +121,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 6251046199111964487}
-        m_MethodName: UI_Cancel
+        m_MethodName: UICancel
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -1200,7 +1200,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 6251046199111964487}
-        m_MethodName: UI_Confirm
+        m_MethodName: UIConfirm
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
