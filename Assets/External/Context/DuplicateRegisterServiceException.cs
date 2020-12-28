@@ -1,7 +1,7 @@
 ﻿
 using System;
 
-namespace Zitga.Context
+namespace Zitga.ContextSystem
 {
     public class DuplicateRegisterServiceException : Exception
     {

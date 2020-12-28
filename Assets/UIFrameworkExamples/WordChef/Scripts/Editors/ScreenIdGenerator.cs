@@ -30,7 +30,7 @@ namespace deVoid.UIFramework.Examples.WordChef.Editor
         private const string ScreenIdScriptName = "ScreenIds";
         private const string ScreenIdScriptNamespace = "deVoid.UIFramework.Examples.WordChef";
 
-        [MenuItem("Assets/Create/deVoid UI/WordChef ScreenIds")]
+        [MenuItem("Tools/UI/Gen WordChef ScreenIds", false, 0)]
         public static void RegenerateScreenIdsAndRefresh()
         {
             RegenerateScreenIds(true);

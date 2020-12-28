@@ -5,37 +5,26 @@ namespace Zitga.Update
 {
     public class GlobalUpdateSystem : IUpdateSystem
     {
-        private readonly object _lock = new object();
-        
         private readonly List<IUpdateSystem> updates;
-        
+
         /// <summary>
         /// Current number update function
         /// </summary>
         public int Count
         {
-            get
-            {
-                lock (_lock)
-                {
-                    return updates.Count;
-                }
-            }
+            get { return updates.Count; }
         }
 
         public GlobalUpdateSystem()
         {
             updates = new List<IUpdateSystem>();
         }
-        
+
         public void OnUpdate(float deltaTime)
         {
-            lock (_lock)
+            foreach (IUpdateSystem update in updates)
             {
-                foreach (IUpdateSystem update in updates)
-                {
-                    update?.OnUpdate(deltaTime);
-                }
+                update?.OnUpdate(deltaTime);
             }
         }
 
@@ -46,16 +35,14 @@ namespace Zitga.Update
         /// <exception cref="Exception"></exception>
         public void Add(IUpdateSystem update)
         {
-            lock (_lock)
+            if (updates.Contains(update))
             {
-                if (updates.Contains(update))
-                {
-                    throw new Exception($"Object is exist in updates: {nameof(update)}");
-                }
-                updates.Add(update);
+                throw new Exception($"Object is exist in updates: {nameof(update)}");
             }
+
+            updates.Add(update);
         }
-        
+
         /// <summary>
         /// remove update from a object when it does not use
         /// </summary>
@@ -63,18 +50,14 @@ namespace Zitga.Update
         /// <exception cref="Exception"></exception>
         public void Remove(IUpdateSystem update)
         {
-            lock (_lock)
+            if (updates.Contains(update))
             {
-                if (updates.Contains(update))
-                {
-                    updates.Remove(update);
-                }
-                else
-                {
-                    throw new Exception($"Object is not exist in updates: {nameof(update)}");
-                }
+                updates.Remove(update);
+            }
+            else
+            {
+                throw new Exception($"Object is not exist in updates: {nameof(update)}");
             }
         }
     }
 }
-

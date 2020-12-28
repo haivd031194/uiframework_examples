@@ -7,7 +7,7 @@ namespace Zitga.Sound
     /// </summary>
     public class Audio
     {
-        private SoundManager SoundManager { get; set; }
+        private readonly SoundManager soundManager;
         /// <summary>
         /// The ID of the Audio
         /// </summary>
@@ -59,7 +59,7 @@ namespace Zitga.Sound
         private Transform SourceTransform
         {
             get => sourceTransform;
-            set => sourceTransform = value == null ? SoundManager.transform : value;
+            set => sourceTransform = value == null ? soundManager.transform : value;
         }
 
         /// <summary>
@@ -320,6 +320,8 @@ namespace Zitga.Sound
 
         public Audio(AudioType audioType, AudioClip clip, bool loop, bool persist, float volume, float fadeInValue, float fadeOutValue, Transform sourceTransform)
         {
+            soundManager = ContextSystem.Context.Current.GetService<SoundManager>();
+            
             // Set unique audio ID
             AudioID = audioCounter;
             audioCounter++;
@@ -344,7 +346,7 @@ namespace Zitga.Sound
             Priority = 128;
             Pitch = 1;
             StereoPan = 0;
-            if (sourceTransform != null && sourceTransform != SoundManager.transform)
+            if (sourceTransform != null && sourceTransform != soundManager.transform)
             {
                 SpatialBlend = 1;
             }
@@ -401,7 +403,7 @@ namespace Zitga.Sound
             if (Pooled)
             {
                 // If not, restore it from the audioPool
-                bool restoredFromPool = SoundManager.RestoreAudioFromPool(Type, AudioID);
+                bool restoredFromPool = soundManager.RestoreAudioFromPool(Type, AudioID);
                 if (!restoredFromPool)
                 {
                     return;
@@ -552,17 +554,17 @@ namespace Zitga.Sound
             {
                 case AudioType.Music:
                     {
-                        AudioSource.volume = Volume * SoundManager.GlobalMusicVolume * SoundManager.GlobalVolume;
+                        AudioSource.volume = Volume * soundManager.GlobalMusicVolume * soundManager.GlobalVolume;
                         break;
                     }
                 case AudioType.Sound:
                     {
-                        AudioSource.volume = Volume * SoundManager.GlobalSoundsVolume * SoundManager.GlobalVolume;
+                        AudioSource.volume = Volume * soundManager.GlobalSoundsVolume * soundManager.GlobalVolume;
                         break;
                     }
                 case AudioType.UISound:
                     {
-                        AudioSource.volume = Volume * SoundManager.GlobalUISoundsVolume * SoundManager.GlobalVolume;
+                        AudioSource.volume = Volume * soundManager.GlobalUISoundsVolume * soundManager.GlobalVolume;
                         break;
                     }
             }

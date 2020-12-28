@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Zitga.Context
+namespace Zitga.ContextSystem
 {
     public class ServiceContainer : IServiceContainer, IDisposable
     {

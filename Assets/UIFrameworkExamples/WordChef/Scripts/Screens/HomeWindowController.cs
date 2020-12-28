@@ -1,8 +1,5 @@
-﻿using System;
-using deVoid.UIFramework;
+﻿using deVoid.UIFramework;
 using deVoid.UIFramework.Examples.WordChef;
-using UnityEngine;
-using UnityEngine.PlayerLoop;
 using Random = UnityEngine.Random;
 
 public class HomeWindowController : AWindowController

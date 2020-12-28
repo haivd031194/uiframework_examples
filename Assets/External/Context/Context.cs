@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Zitga.Context
+namespace Zitga.ContextSystem
 {
     public class Context : IDisposable
     {
@@ -84,10 +84,7 @@ namespace Zitga.Context
         public virtual object GetService(string name)
         {
             object result = container.Resolve(name);
-            if (result != null)
-                return result;
-
-            return null;
+            return result;
         }
 
         public virtual T GetService<T>()
@@ -119,8 +116,7 @@ namespace Zitga.Context
                 if (disposing)
                 {
                     IDisposable dis = container as IDisposable;
-                    if (dis != null)
-                        dis.Dispose();
+                    dis?.Dispose();
                 }
 
                 disposed = true;

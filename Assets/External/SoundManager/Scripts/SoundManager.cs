@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using Zitga.ContextSystem;
 using Zitga.Update;
 
 namespace Zitga.Sound
@@ -60,6 +61,7 @@ namespace Zitga.Sound
         public SoundManager()
         {
             var gameObject = new GameObject(nameof(SoundManager));
+            
             transform = gameObject.transform;
             
             Init();
@@ -87,6 +89,8 @@ namespace Zitga.Sound
                 IgnoreDuplicateUISounds = false;
 
                 initialized = true;
+                
+                Context.Current.GetService<GlobalUpdateSystem>().Add(this);
             }
         }
 
@@ -872,5 +876,10 @@ namespace Zitga.Sound
         }
 
         #endregion
+        
+        ~SoundManager()
+        {
+            Context.Current.GetService<GlobalUpdateSystem>().Remove(this);
+        }
     }
 }
