@@ -64,9 +64,9 @@ namespace deVoid.UIFramework.Examples
         
         private void InitSoundManager()
         {
-            var soundManager = new SoundManager();
+          //  var soundManager = new SoundManager();
             
-            context.GetContainer().Register(soundManager);
+          //  context.GetContainer().Register(soundManager);
         }
 
         private void Update()
