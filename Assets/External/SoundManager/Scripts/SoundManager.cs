@@ -1,70 +1,90 @@
 using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine.SceneManagement;
 using System.Linq;
-using Zitga.ContextSystem;
-using Zitga.Update;
 
 namespace Zitga.Sound
 {
     /// <summary>
-    /// class responsible for playing and managing audio and sounds.
+    /// Static class responsible for playing and managing audio and sounds.
     /// </summary>
-    public class SoundManager : IUpdateSystem
+    public class SoundManager : MonoBehaviour
     {
         /// <summary>
-        /// The gameObject that the sound manager is attached to
+        /// The gameobject that the sound manager is attached to
         /// </summary>
-        public Transform transform { get; private set; }
+        public static GameObject Gameobject { get { return Instance.gameObject; } }
 
         /// <summary>
         /// When set to true, new music audios that have the same audio clip as any other music audios, will be ignored
         /// </summary>
-        public bool IgnoreDuplicateMusic { get; set; }
+        public static bool IgnoreDuplicateMusic { get; set; }
 
         /// <summary>
         /// When set to true, new sound audios that have the same audio clip as any other sound audios, will be ignored
         /// </summary>
-        public bool IgnoreDuplicateSounds { get; set; }
+        public static bool IgnoreDuplicateSounds { get; set; }
 
         /// <summary>
         /// When set to true, new UI sound audios that have the same audio clip as any other UI sound audios, will be ignored
         /// </summary>
-        public bool IgnoreDuplicateUISounds { get; set; }
+        public static bool IgnoreDuplicateUISounds { get; set; }
 
         /// <summary>
         /// Global volume
         /// </summary>
-        public float GlobalVolume { get; set; }
+        public static float GlobalVolume { get; set; }
 
         /// <summary>
         /// Global music volume
         /// </summary>
-        public float GlobalMusicVolume { get; set; }
+        public static float GlobalMusicVolume { get; set; }
 
         /// <summary>
         /// Global sounds volume
         /// </summary>
-        public float GlobalSoundsVolume { get; set; }
+        public static float GlobalSoundsVolume { get; set; }
 
         /// <summary>
         /// Global UI sounds volume
         /// </summary>
-        public float GlobalUISoundsVolume { get; set; }
+        public static float GlobalUISoundsVolume { get; set; }
 
-        private Dictionary<int, Audio> musicAudio;
-        private Dictionary<int, Audio> soundsAudio;
-        private Dictionary<int, Audio> UISoundsAudio;
-        private Dictionary<int, Audio> audioPool;
+        public static AudioSource GlobalAudioSource { get; set; }
 
-        private bool initialized;
+        private static SoundManager instance = null;
 
-        public SoundManager()
+        private static Dictionary<int, Audio> musicAudio;
+        private static Dictionary<int, Audio> soundsAudio;
+        private static Dictionary<int, Audio> UISoundsAudio;
+        private static Dictionary<int, Audio> audioPool;
+
+        private static bool initialized = false;
+
+        private static SoundManager Instance
         {
-            var gameObject = new GameObject(nameof(SoundManager));
-            
-            transform = gameObject.transform;
-            
-            Init();
+            get
+            {
+                if (instance == null)
+                {
+                    instance = (SoundManager)FindObjectOfType(typeof(SoundManager));
+                    if (instance == null)
+                    {
+                        // Create gameObject and add component
+                        instance = (new GameObject("EazySoundManager")).AddComponent<SoundManager>();
+                        if (GlobalAudioSource==null)
+                        {
+                            GlobalAudioSource = instance.gameObject.AddComponent<AudioSource>();
+                        }
+                    }
+                }
+                return instance;
+            }
+        }
+
+        static SoundManager()
+        {
+            Instance.Init();
         }
 
         /// <summary>
@@ -89,15 +109,26 @@ namespace Zitga.Sound
                 IgnoreDuplicateUISounds = false;
 
                 initialized = true;
-                
-                Context.Current.GetService<GlobalUpdateSystem>().Add(this);
+                DontDestroyOnLoad(this);
             }
+        }
+
+        private void OnEnable()
+        {
+            SceneManager.sceneLoaded += OnSceneLoaded;
+        }
+
+        private void OnDisable()
+        {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
         }
 
         /// <summary>
         /// Event triggered when a new scene is loaded
         /// </summary>
-        private void RemoveAllNonPersistAudio()
+        /// <param name="scene">The scene that is loaded</param>
+        /// <param name="mode">The scene load mode</param>
+        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
             // Stop and remove all non-persistent audio
             RemoveNonPersistAudio(musicAudio);
@@ -105,7 +136,7 @@ namespace Zitga.Sound
             RemoveNonPersistAudio(UISoundsAudio);
         }
 
-        public void OnUpdate(float deltaTime)
+        private void Update()
         {
             UpdateAllAudio(musicAudio);
             UpdateAllAudio(soundsAudio);
@@ -117,7 +148,7 @@ namespace Zitga.Sound
         /// </summary>
         /// <param name="audioType">The audio type of the dictionary to return</param>
         /// <returns>An audio dictionary</returns>
-        private Dictionary<int, Audio> GetAudioTypeDictionary(Audio.AudioType audioType)
+        private static Dictionary<int, Audio> GetAudioTypeDictionary(Audio.AudioType audioType)
         {
             Dictionary<int, Audio> audioDict = new Dictionary<int, Audio>();
             switch (audioType)
@@ -141,7 +172,7 @@ namespace Zitga.Sound
         /// </summary>
         /// <param name="audioType">The audio type that the returned IgnoreDuplicates setting affects</param>
         /// <returns>An IgnoreDuplicates setting (bool)</returns>
-        private bool GetAudioTypeIgnoreDuplicateSetting(Audio.AudioType audioType)
+        private static bool GetAudioTypeIgnoreDuplicateSetting(Audio.AudioType audioType)
         {
             switch (audioType)
             {
@@ -160,7 +191,7 @@ namespace Zitga.Sound
         /// Updates the state of all audios of an audio dictionary
         /// </summary>
         /// <param name="audioDict">The audio dictionary to update</param>
-        private void UpdateAllAudio(Dictionary<int, Audio> audioDict)
+        private static void UpdateAllAudio(Dictionary<int, Audio> audioDict)
         {
             // Go through all audios and update them
             List<int> keys = new List<int>(audioDict.Keys);
@@ -172,21 +203,27 @@ namespace Zitga.Sound
                 // Remove it if it is no longer active (playing)
                 if (!audio.IsPlaying && !audio.Paused)
                 {
-                    Object.Destroy(audio.AudioSource);
-
+                   // Destroy(audio.AudioSource);
+                    DisableAudioSource(audio);
                     // Add it to the audio pool in case it needs to be referenced in the future
-                    audioPool.Add(key, audio);
-                    audio.Pooled = true;
+                    if (!audioPool.ContainsKey(key))
+                    {
+                        audioPool.Add(key, audio);
+                    }
+                   
+                 //   audio.Pooled = true;
                     audioDict.Remove(key);
                 }
             }
         }
 
+        private static void DisableAudioSource(Audio audio) => audio.AudioSource.enabled = false;
+
         /// <summary>
         /// Remove all non-persistant audios from an audio dictionary
         /// </summary>
         /// <param name="audioDict">The audio dictionary whose non-persistant audios are getting removed</param>
-        private void RemoveNonPersistAudio(Dictionary<int, Audio> audioDict)
+        private static void RemoveNonPersistAudio(Dictionary<int, Audio> audioDict)
         {
             // Go through all audios and remove them if they should not persist through scenes
             List<int> keys = new List<int>(audioDict.Keys);
@@ -195,7 +232,7 @@ namespace Zitga.Sound
                 Audio audio = audioDict[key];
                 if (!audio.Persist && audio.Activated)
                 {
-                    Object.Destroy(audio.AudioSource);
+                    Destroy(audio.AudioSource);
                     audioDict.Remove(key);
                 }
             }
@@ -218,12 +255,16 @@ namespace Zitga.Sound
         /// <param name="audioType">The audio type of the audio to restore</param>
         /// <param name="audioID">The ID of the audio to be restored</param>
         /// <returns>True if the audio is restored, false if the audio was not in the audio pool.</returns>
-        public bool RestoreAudioFromPool(Audio.AudioType audioType, int audioID)
+        public static bool RestoreAudioFromPool(Audio.AudioType audioType, int audioID)
         {
             if(audioPool.ContainsKey(audioID))
             {
                 Dictionary<int, Audio> audioDict = GetAudioTypeDictionary(audioType);
-                audioDict.Add(audioID, audioPool[audioID]);
+                if (!audioDict.ContainsKey(audioID))
+                {
+                    audioDict.Add(audioID, audioPool[audioID]);
+                }
+              
                 audioPool.Remove(audioID);
 
                 return true;
@@ -239,9 +280,11 @@ namespace Zitga.Sound
         /// </summary>
         /// <param name="audioID">The id of the Audio to be retrieved</param>
         /// <returns>Audio that has as its id the audioID, null if no such Audio is found</returns>
-        public Audio GetAudio(int audioID)
+        public static Audio GetAudio(int audioID)
         {
-            Audio audio = GetMusicAudio(audioID);
+            Audio audio;
+
+            audio = GetMusicAudio(audioID);
             if (audio != null)
             {
                 return audio;
@@ -254,7 +297,12 @@ namespace Zitga.Sound
             }
 
             audio = GetUISoundAudio(audioID);
-            return audio;
+            if (audio != null)
+            {
+                return audio;
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -262,7 +310,7 @@ namespace Zitga.Sound
         /// </summary>
         /// <param name="audioClip">The audio clip of the Audio to be retrieved</param>
         /// <returns>First occurrence of Audio that has as plays the audioClip, null if no such Audio is found</returns>
-        public Audio GetAudio(AudioClip audioClip)
+        public static Audio GetAudio(AudioClip audioClip)
         {
             Audio audio = GetMusicAudio(audioClip);
             if (audio != null)
@@ -277,7 +325,12 @@ namespace Zitga.Sound
             }
 
             audio = GetUISoundAudio(audioClip);
-            return audio;
+            if (audio != null)
+            {
+                return audio;
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -285,7 +338,7 @@ namespace Zitga.Sound
         /// </summary>
         /// <param name="audioID">The id of the music Audio to be returned</param>
         /// <returns>Music Audio that has as its id the audioID if one is found, null if no such Audio is found</returns>
-        public Audio GetMusicAudio(int audioID)
+        public static Audio GetMusicAudio(int audioID)
         {
             return GetAudio(Audio.AudioType.Music, true, audioID);
         }
@@ -295,7 +348,7 @@ namespace Zitga.Sound
         /// </summary>
         /// <param name="audioClip">The audio clip of the music Audio to be retrieved</param>
         /// <returns>First occurrence of music Audio that has as plays the audioClip, null if no such Audio is found</returns>
-        public Audio GetMusicAudio(AudioClip audioClip)
+        public static Audio GetMusicAudio(AudioClip audioClip)
         {
             return GetAudio(Audio.AudioType.Music, true, audioClip);
         }
@@ -305,7 +358,7 @@ namespace Zitga.Sound
         /// </summary>
         /// <param name="audioID">The id of the sound fx Audio to be returned</param>
         /// <returns>Sound fx Audio that has as its id the audioID if one is found, null if no such Audio is found</returns>
-        public Audio GetSoundAudio(int audioID)
+        public static Audio GetSoundAudio(int audioID)
         {
             return GetAudio(Audio.AudioType.Sound, true, audioID);
         }
@@ -315,7 +368,7 @@ namespace Zitga.Sound
         /// </summary>
         /// <param name="audioClip">The audio clip of the sound Audio to be retrieved</param>
         /// <returns>First occurrence of sound Audio that has as plays the audioClip, null if no such Audio is found</returns>
-        public Audio GetSoundAudio(AudioClip audioClip)
+        public static Audio GetSoundAudio(AudioClip audioClip)
         {
             return GetAudio(Audio.AudioType.Sound, true, audioClip);
         }
@@ -325,7 +378,7 @@ namespace Zitga.Sound
         /// </summary>
         /// <param name="audioID">The id of the UI sound fx Audio to be returned</param>
         /// <returns>UI sound fx Audio that has as its id the audioID if one is found, null if no such Audio is found</returns>
-        public Audio GetUISoundAudio(int audioID)
+        public static Audio GetUISoundAudio(int audioID)
         {
             return GetAudio(Audio.AudioType.UISound, true, audioID);
         }
@@ -335,12 +388,12 @@ namespace Zitga.Sound
         /// </summary>
         /// <param name="audioClip">The audio clip of the UI sound Audio to be retrieved</param>
         /// <returns>First occurrence of UI sound Audio that has as plays the audioClip, null if no such Audio is found</returns>
-        public Audio GetUISoundAudio(AudioClip audioClip)
+        public static Audio GetUISoundAudio(AudioClip audioClip)
         {
             return GetAudio(Audio.AudioType.UISound, true, audioClip);
         }
 
-        private Audio GetAudio(Audio.AudioType audioType, bool usePool, int audioID)
+        private static Audio GetAudio(Audio.AudioType audioType, bool usePool, int audioID)
         {
             Dictionary<int, Audio> audioDict = GetAudioTypeDictionary(audioType);
 
@@ -357,7 +410,7 @@ namespace Zitga.Sound
             return null;
         }
 
-        private Audio GetAudio(Audio.AudioType audioType, bool usePool, AudioClip audioClip)
+        private static Audio GetAudio(Audio.AudioType audioType, bool usePool, AudioClip audioClip)
         {
             Dictionary<int, Audio> audioDict = GetAudioTypeDictionary(audioType);
 
@@ -397,7 +450,7 @@ namespace Zitga.Sound
         /// </summary>
         /// <param name="clip">The audio clip to prepare</param>
         /// <returns>The ID of the created Audio object</returns>
-        public int PrepareMusic(AudioClip clip)
+        public static int PrepareMusic(AudioClip clip)
         {
             return PrepareAudio(Audio.AudioType.Music, clip, 1f, false, false, 1f, 1f, -1f, null);
         }
@@ -408,7 +461,7 @@ namespace Zitga.Sound
         /// <param name="clip">The audio clip to prepare</param>
         /// <param name="volume"> The volume the music will have</param>
         /// <returns>The ID of the created Audio object</returns>
-        public int PrepareMusic(AudioClip clip, float volume)
+        public static int PrepareMusic(AudioClip clip, float volume)
         {
             return PrepareAudio(Audio.AudioType.Music, clip, volume, false, false, 1f, 1f, -1f, null);
         }
@@ -418,10 +471,10 @@ namespace Zitga.Sound
         /// </summary>
         /// <param name="clip">The audio clip to prepare</param>
         /// <param name="volume"> The volume the music will have</param>
-        /// <param name="loop">Whether the music is looped</param>
+        /// <param name="loop">Wether the music is looped</param>
         /// <param name = "persist" > Whether the audio persists in between scene changes</param>
         /// <returns>The ID of the created Audio object</returns>
-        public int PrepareMusic(AudioClip clip, float volume, bool loop, bool persist)
+        public static int PrepareMusic(AudioClip clip, float volume, bool loop, bool persist)
         {
             return PrepareAudio(Audio.AudioType.Music, clip, volume, loop, persist, 1f, 1f, -1f, null);
         }
@@ -431,12 +484,12 @@ namespace Zitga.Sound
         /// </summary>
         /// <param name="clip">The audio clip to prepare</param>
         /// <param name="volume"> The volume the music will have</param>
-        /// <param name="loop">Whether the music is looped</param>
+        /// <param name="loop">Wether the music is looped</param>
         /// <param name="persist"> Whether the audio persists in between scene changes</param>
-        /// <param name="fadeInSeconds"></param>
-        /// <param name="fadeOutSeconds"></param>
+        /// <param name="fadeInValue">How many seconds it needs for the audio to fade in/ reach target volume (if higher than current)</param>
+        /// <param name="fadeOutValue"> How many seconds it needs for the audio to fade out/ reach target volume (if lower than current)</param>
         /// <returns>The ID of the created Audio object</returns>
-        public int PrepareMusic(AudioClip clip, float volume, bool loop, bool persist, float fadeInSeconds, float fadeOutSeconds)
+        public static int PrepareMusic(AudioClip clip, float volume, bool loop, bool persist, float fadeInSeconds, float fadeOutSeconds)
         {
             return PrepareAudio(Audio.AudioType.Music, clip, volume, loop, persist, fadeInSeconds, fadeOutSeconds, -1f, null);
         }
@@ -446,16 +499,16 @@ namespace Zitga.Sound
         /// </summary>
         /// <param name="clip">The audio clip to prepare</param>
         /// <param name="volume"> The volume the music will have</param>
-        /// <param name="loop">Whether the music is looped</param>
+        /// <param name="loop">Wether the music is looped</param>
         /// <param name="persist"> Whether the audio persists in between scene changes</param>
-        /// <param name="fadeInSeconds">How many seconds it needs for the audio to fade in/ reach target volume (if higher than current)</param>
-        /// <param name="fadeOutSeconds"> How many seconds it needs for the audio to fade out/ reach target volume (if lower than current)</param>
-        /// <param name="currentMusicFadeOutSeconds"> How many seconds it needs for current music audio to fade out. It will override its own fade out seconds. If -1 is passed, current music will keep its own fade out seconds</param>
+        /// <param name="fadeInValue">How many seconds it needs for the audio to fade in/ reach target volume (if higher than current)</param>
+        /// <param name="fadeOutValue"> How many seconds it needs for the audio to fade out/ reach target volume (if lower than current)</param>
+        /// <param name="currentMusicfadeOutSeconds"> How many seconds it needs for current music audio to fade out. It will override its own fade out seconds. If -1 is passed, current music will keep its own fade out seconds</param>
         /// <param name="sourceTransform">The transform that is the source of the music (will become 3D audio). If 3D audio is not wanted, use null</param>
         /// <returns>The ID of the created Audio object</returns>
-        public int PrepareMusic(AudioClip clip, float volume, bool loop, bool persist, float fadeInSeconds, float fadeOutSeconds, float currentMusicFadeOutSeconds, Transform sourceTransform)
+        public static int PrepareMusic(AudioClip clip, float volume, bool loop, bool persist, float fadeInSeconds, float fadeOutSeconds, float currentMusicfadeOutSeconds, Transform sourceTransform)
         {
-            return PrepareAudio(Audio.AudioType.Music, clip, volume, loop, persist, fadeInSeconds, fadeOutSeconds, currentMusicFadeOutSeconds, sourceTransform);
+            return PrepareAudio(Audio.AudioType.Music, clip, volume, loop, persist, fadeInSeconds, fadeOutSeconds, currentMusicfadeOutSeconds, sourceTransform);
         }
 
         /// <summary>
@@ -463,7 +516,7 @@ namespace Zitga.Sound
         /// </summary>
         /// <param name="clip">The audio clip to prepare</param>
         /// <returns>The ID of the created Audio object</returns>
-        public int PrepareSound(AudioClip clip)
+        public static int PrepareSound(AudioClip clip)
         {
             return PrepareAudio(Audio.AudioType.Sound, clip, 1f, false, false, 0f, 0f, -1f, null);
         }
@@ -474,7 +527,7 @@ namespace Zitga.Sound
         /// <param name="clip">The audio clip to prepare</param>
         /// <param name="volume"> The volume the music will have</param>
         /// <returns>The ID of the created Audio object</returns>
-        public int PrepareSound(AudioClip clip, float volume)
+        public static int PrepareSound(AudioClip clip, float volume)
         {
             return PrepareAudio(Audio.AudioType.Sound, clip, volume, false, false, 0f, 0f, -1f, null);
         }
@@ -483,9 +536,9 @@ namespace Zitga.Sound
         /// Prepares and initializes a sound fx
         /// </summary>
         /// <param name="clip">The audio clip to prepare</param>
-        /// <param name="loop">Whether the sound is looped</param>
+        /// <param name="loop">Wether the sound is looped</param>
         /// <returns>The ID of the created Audio object</returns>
-        public int PrepareSound(AudioClip clip, bool loop)
+        public static int PrepareSound(AudioClip clip, bool loop)
         {
             return PrepareAudio(Audio.AudioType.Sound, clip, 1f, loop, false, 0f, 0f, -1f, null);
         }
@@ -495,10 +548,10 @@ namespace Zitga.Sound
         /// </summary>
         /// <param name="clip">The audio clip to prepare</param>
         /// <param name="volume"> The volume the music will have</param>
-        /// <param name="loop">Whether the sound is looped</param>
+        /// <param name="loop">Wether the sound is looped</param>
         /// <param name="sourceTransform">The transform that is the source of the sound (will become 3D audio). If 3D audio is not wanted, use null</param>
         /// <returns>The ID of the created Audio object</returns>
-        public int PrepareSound(AudioClip clip, float volume, bool loop, Transform sourceTransform)
+        public static int PrepareSound(AudioClip clip, float volume, bool loop, Transform sourceTransform)
         {
             return PrepareAudio(Audio.AudioType.Sound, clip, volume, loop, false, 0f, 0f, -1f, sourceTransform);
         }
@@ -508,7 +561,7 @@ namespace Zitga.Sound
         /// </summary>
         /// <param name="clip">The audio clip to prepare</param>
         /// <returns>The ID of the created Audio object</returns>
-        public int PrepareUISound(AudioClip clip)
+        public static int PrepareUISound(AudioClip clip)
         {
             return PrepareAudio(Audio.AudioType.UISound, clip, 1f, false, false, 0f, 0f, -1f, null);
         }
@@ -519,12 +572,12 @@ namespace Zitga.Sound
         /// <param name="clip">The audio clip to prepare</param>
         /// <param name="volume"> The volume the music will have</param>
         /// <returns>The ID of the created Audio object</returns>
-        public int PrepareUISound(AudioClip clip, float volume)
+        public static int PrepareUISound(AudioClip clip, float volume)
         {
             return PrepareAudio(Audio.AudioType.UISound, clip, volume, false, false, 0f, 0f, -1f, null);
         }
 
-        private int PrepareAudio(Audio.AudioType audioType, AudioClip clip, float volume, bool loop, bool persist, float fadeInSeconds, float fadeOutSeconds, float currentMusicFadeOutSeconds, Transform sourceTransform)
+        private static int PrepareAudio(Audio.AudioType audioType, AudioClip clip, float volume, bool loop, bool persist, float fadeInSeconds, float fadeOutSeconds, float currentMusicfadeOutSeconds, Transform sourceTransform)
         {
             if (clip == null)
             {
@@ -532,16 +585,19 @@ namespace Zitga.Sound
             }
 
             Dictionary<int, Audio> audioDict = GetAudioTypeDictionary(audioType);
-            bool ignoreDuplicateAudio = GetAudioTypeIgnoreDuplicateSetting(audioType);
-
-            if (ignoreDuplicateAudio)
+          
+            
+            Audio duplicateAudio = GetAudio(audioType, true, clip);
+            if (duplicateAudio!=null && duplicateAudio.IsIgnoreDuplicateAudio)
             {
-                Audio duplicateAudio = GetAudio(audioType, true, clip);
-                if(duplicateAudio != null)
+                if (!audioDict.ContainsKey(duplicateAudio.AudioID))
                 {
-                    return duplicateAudio.AudioID;
+                    audioDict.Add(duplicateAudio.AudioID,duplicateAudio);
                 }
+                audioDict[duplicateAudio.AudioID].InitAllVariable(audioType, clip, loop, persist, volume, fadeInSeconds, fadeOutSeconds, sourceTransform);
+                return duplicateAudio.AudioID;
             }
+            
 
             // Create the audioSource
             Audio audio = new Audio(audioType, clip, loop, persist, volume, fadeInSeconds, fadeOutSeconds, sourceTransform);
@@ -561,7 +617,7 @@ namespace Zitga.Sound
         /// </summary>
         /// <param name="clip">The audio clip to play</param>
         /// <returns>The ID of the created Audio object</returns>
-        public int PlayMusic(AudioClip clip)
+        public static int PlayMusic(AudioClip clip)
         {
             return PlayAudio(Audio.AudioType.Music, clip, 1f, false, false, 1f, 1f, -1f, null);
         }
@@ -572,7 +628,7 @@ namespace Zitga.Sound
         /// <param name="clip">The audio clip to play</param>
         /// <param name="volume"> The volume the music will have</param>
         /// <returns>The ID of the created Audio object</returns>
-        public int PlayMusic(AudioClip clip, float volume)
+        public static int PlayMusic(AudioClip clip, float volume)
         {
             return PlayAudio(Audio.AudioType.Music, clip, volume, false, false, 1f, 1f, -1f, null);
         }
@@ -582,10 +638,10 @@ namespace Zitga.Sound
         /// </summary>
         /// <param name="clip">The audio clip to play</param>
         /// <param name="volume"> The volume the music will have</param>
-        /// <param name="loop">Whether the music is looped</param>
+        /// <param name="loop">Wether the music is looped</param>
         /// <param name = "persist" > Whether the audio persists in between scene changes</param>
         /// <returns>The ID of the created Audio object</returns>
-        public int PlayMusic(AudioClip clip, float volume, bool loop, bool persist)
+        public static int PlayMusic(AudioClip clip, float volume, bool loop, bool persist)
         {
             return PlayAudio(Audio.AudioType.Music, clip, volume, loop, persist, 1f, 1f, -1f, null);
         }
@@ -595,12 +651,12 @@ namespace Zitga.Sound
         /// </summary>
         /// <param name="clip">The audio clip to play</param>
         /// <param name="volume"> The volume the music will have</param>
-        /// <param name="loop">Whether the music is looped</param>
+        /// <param name="loop">Wether the music is looped</param>
         /// <param name="persist"> Whether the audio persists in between scene changes</param>
         /// <param name="fadeInSeconds">How many seconds it needs for the audio to fade in/ reach target volume (if higher than current)</param>
         /// <param name="fadeOutSeconds"> How many seconds it needs for the audio to fade out/ reach target volume (if lower than current)</param>
         /// <returns>The ID of the created Audio object</returns>
-        public int PlayMusic(AudioClip clip, float volume, bool loop, bool persist, float fadeInSeconds, float fadeOutSeconds)
+        public static int PlayMusic(AudioClip clip, float volume, bool loop, bool persist, float fadeInSeconds, float fadeOutSeconds)
         {
             return PlayAudio(Audio.AudioType.Music, clip, volume, loop, persist, fadeInSeconds, fadeOutSeconds, -1f, null);
         }
@@ -610,16 +666,16 @@ namespace Zitga.Sound
         /// </summary>
         /// <param name="clip">The audio clip to play</param>
         /// <param name="volume"> The volume the music will have</param>
-        /// <param name="loop">Whether the music is looped</param>
+        /// <param name="loop">Wether the music is looped</param>
         /// <param name="persist"> Whether the audio persists in between scene changes</param>
         /// <param name="fadeInSeconds">How many seconds it needs for the audio to fade in/ reach target volume (if higher than current)</param>
         /// <param name="fadeOutSeconds"> How many seconds it needs for the audio to fade out/ reach target volume (if lower than current)</param>
-        /// <param name="currentMusicFadeOutSeconds"> How many seconds it needs for current music audio to fade out. It will override its own fade out seconds. If -1 is passed, current music will keep its own fade out seconds</param>
+        /// <param name="currentMusicfadeOutSeconds"> How many seconds it needs for current music audio to fade out. It will override its own fade out seconds. If -1 is passed, current music will keep its own fade out seconds</param>
         /// <param name="sourceTransform">The transform that is the source of the music (will become 3D audio). If 3D audio is not wanted, use null</param>
         /// <returns>The ID of the created Audio object</returns>
-        public int PlayMusic(AudioClip clip, float volume, bool loop, bool persist, float fadeInSeconds, float fadeOutSeconds, float currentMusicFadeOutSeconds, Transform sourceTransform)
+        public static int PlayMusic(AudioClip clip, float volume, bool loop, bool persist, float fadeInSeconds, float fadeOutSeconds, float currentMusicfadeOutSeconds, Transform sourceTransform)
         {
-            return PlayAudio(Audio.AudioType.Music, clip, volume, loop, persist, fadeInSeconds, fadeOutSeconds, currentMusicFadeOutSeconds, sourceTransform);
+            return PlayAudio(Audio.AudioType.Music, clip, volume, loop, persist, fadeInSeconds, fadeOutSeconds, currentMusicfadeOutSeconds, sourceTransform);
         }
 
         /// <summary>
@@ -627,7 +683,7 @@ namespace Zitga.Sound
         /// </summary>
         /// <param name="clip">The audio clip to play</param>
         /// <returns>The ID of the created Audio object</returns>
-        public int PlaySound(AudioClip clip)
+        public static int PlaySound(AudioClip clip)
         {
             return PlayAudio(Audio.AudioType.Sound, clip, 1f, false, false, 0f, 0f, -1f, null);
         }
@@ -638,18 +694,23 @@ namespace Zitga.Sound
         /// <param name="clip">The audio clip to play</param>
         /// <param name="volume"> The volume the music will have</param>
         /// <returns>The ID of the created Audio object</returns>
-        public int PlaySound(AudioClip clip, float volume)
+        public static int PlaySound(AudioClip clip, float volume)
         {
             return PlayAudio(Audio.AudioType.Sound, clip, volume, false, false, 0f, 0f, -1f, null);
+        }
+        
+        public static int PlayBasicSound(AudioClip clip, float volume)
+        {
+            return PlayBasicAudio(Audio.AudioType.Sound, clip, volume, false, false, 0f, 0f, -1f, null);
         }
 
         /// <summary>
         /// Play a sound fx
         /// </summary>
         /// <param name="clip">The audio clip to play</param>
-        /// <param name="loop">Whether the sound is looped</param>
+        /// <param name="loop">Wether the sound is looped</param>
         /// <returns>The ID of the created Audio object</returns>
-        public int PlaySound(AudioClip clip, bool loop)
+        public static int PlaySound(AudioClip clip, bool loop)
         {
             return PlayAudio(Audio.AudioType.Sound, clip, 1f, loop, false, 0f, 0f, -1f, null);
         }
@@ -659,10 +720,10 @@ namespace Zitga.Sound
         /// </summary>
         /// <param name="clip">The audio clip to play</param>
         /// <param name="volume"> The volume the music will have</param>
-        /// <param name="loop">Whether the sound is looped</param>
+        /// <param name="loop">Wether the sound is looped</param>
         /// <param name="sourceTransform">The transform that is the source of the sound (will become 3D audio). If 3D audio is not wanted, use null</param>
         /// <returns>The ID of the created Audio object</returns>
-        public int PlaySound(AudioClip clip, float volume, bool loop, Transform sourceTransform)
+        public static int PlaySound(AudioClip clip, float volume, bool loop, Transform sourceTransform)
         {
             return PlayAudio(Audio.AudioType.Sound, clip, volume, loop, false, 0f, 0f, -1f, sourceTransform);
         }
@@ -672,7 +733,7 @@ namespace Zitga.Sound
         /// </summary>
         /// <param name="clip">The audio clip to play</param>
         /// <returns>The ID of the created Audio object</returns>
-        public int PlayUISound(AudioClip clip)
+        public static int PlayUISound(AudioClip clip)
         {
             return PlayAudio(Audio.AudioType.UISound, clip, 1f, false, false, 0f, 0f, -1f, null);
         }
@@ -683,12 +744,12 @@ namespace Zitga.Sound
         /// <param name="clip">The audio clip to play</param>
         /// <param name="volume"> The volume the music will have</param>
         /// <returns>The ID of the created Audio object</returns>
-        public int PlayUISound(AudioClip clip, float volume)
+        public static int PlayUISound(AudioClip clip, float volume)
         {
             return PlayAudio(Audio.AudioType.UISound, clip, volume, false, false, 0f, 0f, -1f, null);
         }
 
-        private int PlayAudio(Audio.AudioType audioType, AudioClip clip, float volume, bool loop, bool persist, float fadeInSeconds, float fadeOutSeconds, float currentMusicfadeOutSeconds, Transform sourceTransform)
+        private static int PlayAudio(Audio.AudioType audioType, AudioClip clip, float volume, bool loop, bool persist, float fadeInSeconds, float fadeOutSeconds, float currentMusicfadeOutSeconds, Transform sourceTransform)
         {
             int audioID = PrepareAudio(audioType, clip, volume, loop, persist, fadeInSeconds, fadeOutSeconds, currentMusicfadeOutSeconds, sourceTransform);
 
@@ -698,7 +759,27 @@ namespace Zitga.Sound
                 StopAllMusic(currentMusicfadeOutSeconds);
             }
 
+            GetAudio(audioID).IsBasicAudio = false;
+            //TODO: If use pool only play sound once and wait, if not pool ok auto create new audio source
             GetAudio(audioType, false, audioID).Play();
+            //GetAudio(audioID).Play();
+
+            return audioID;
+        }
+        
+        private static int PlayBasicAudio(Audio.AudioType audioType, AudioClip clip, float volume, bool loop, bool persist, float fadeInSeconds, float fadeOutSeconds, float currentMusicfadeOutSeconds, Transform sourceTransform)
+        {
+            int audioID = PrepareAudio(audioType, clip, volume, loop, persist, fadeInSeconds, fadeOutSeconds, currentMusicfadeOutSeconds, sourceTransform);
+
+            // Stop all current music playing
+            if (audioType == Audio.AudioType.Music)
+            {
+                StopAllMusic(currentMusicfadeOutSeconds);
+            }
+
+            //     GetAudio(audioType, false, audioID).Play();
+            GetAudio(audioID).IsBasicAudio = true;
+            GetAudio(audioID).Play();
 
             return audioID;
         }
@@ -710,7 +791,7 @@ namespace Zitga.Sound
         /// <summary>
         /// Stop all audio playing
         /// </summary>
-        public void StopAll()
+        public static void StopAll()
         {
             StopAll(-1f);
         }
@@ -719,7 +800,7 @@ namespace Zitga.Sound
         /// Stop all audio playing
         /// </summary>
         /// <param name="musicFadeOutSeconds"> How many seconds it needs for all music audio to fade out. It will override  their own fade out seconds. If -1 is passed, all music will keep their own fade out seconds</param>
-        public void StopAll(float musicFadeOutSeconds)
+        public static void StopAll(float musicFadeOutSeconds)
         {
             StopAllMusic(musicFadeOutSeconds);
             StopAllSounds();
@@ -729,7 +810,7 @@ namespace Zitga.Sound
         /// <summary>
         /// Stop all music playing
         /// </summary>
-        public void StopAllMusic()
+        public static void StopAllMusic()
         {
             StopAllAudio(Audio.AudioType.Music, -1f);
         }
@@ -738,7 +819,7 @@ namespace Zitga.Sound
         /// Stop all music playing
         /// </summary>
         /// <param name="fadeOutSeconds"> How many seconds it needs for all music audio to fade out. It will override  their own fade out seconds. If -1 is passed, all music will keep their own fade out seconds</param>
-        public void StopAllMusic(float fadeOutSeconds)
+        public static void StopAllMusic(float fadeOutSeconds)
         {
             StopAllAudio(Audio.AudioType.Music, fadeOutSeconds);
         }
@@ -746,7 +827,7 @@ namespace Zitga.Sound
         /// <summary>
         /// Stop all sound fx playing
         /// </summary>
-        public void StopAllSounds()
+        public static void StopAllSounds()
         {
             StopAllAudio(Audio.AudioType.Sound, -1f);
         }
@@ -754,12 +835,12 @@ namespace Zitga.Sound
         /// <summary>
         /// Stop all UI sound fx playing
         /// </summary>
-        public void StopAllUISounds()
+        public static void StopAllUISounds()
         {
             StopAllAudio(Audio.AudioType.UISound, -1f);
         }
 
-        private void StopAllAudio(Audio.AudioType audioType, float fadeOutSeconds)
+        private static void StopAllAudio(Audio.AudioType audioType, float fadeOutSeconds)
         {
             Dictionary<int, Audio> audioDict = GetAudioTypeDictionary(audioType);
 
@@ -782,7 +863,7 @@ namespace Zitga.Sound
         /// <summary>
         /// Pause all audio playing
         /// </summary>
-        public void PauseAll()
+        public static void PauseAll()
         {
             PauseAllMusic();
             PauseAllSounds();
@@ -792,7 +873,7 @@ namespace Zitga.Sound
         /// <summary>
         /// Pause all music playing
         /// </summary>
-        public void PauseAllMusic()
+        public static void PauseAllMusic()
         {
             PauseAllAudio(Audio.AudioType.Music);
         }
@@ -800,7 +881,7 @@ namespace Zitga.Sound
         /// <summary>
         /// Pause all sound fx playing
         /// </summary>
-        public void PauseAllSounds()
+        public static void PauseAllSounds()
         {
             PauseAllAudio(Audio.AudioType.Sound);
         }
@@ -808,12 +889,12 @@ namespace Zitga.Sound
         /// <summary>
         /// Pause all UI sound fx playing
         /// </summary>
-        public void PauseAllUISounds()
+        public static void PauseAllUISounds()
         {
             PauseAllAudio(Audio.AudioType.UISound);
         }
 
-        private void PauseAllAudio(Audio.AudioType audioType)
+        private static void PauseAllAudio(Audio.AudioType audioType)
         {
             Dictionary<int, Audio> audioDict = GetAudioTypeDictionary(audioType);
 
@@ -832,7 +913,7 @@ namespace Zitga.Sound
         /// <summary>
         /// Resume all audio playing
         /// </summary>
-        public void ResumeAll()
+        public static void ResumeAll()
         {
             ResumeAllMusic();
             ResumeAllSounds();
@@ -842,7 +923,7 @@ namespace Zitga.Sound
         /// <summary>
         /// Resume all music playing
         /// </summary>
-        public void ResumeAllMusic()
+        public static void ResumeAllMusic()
         {
             ResumeAllAudio(Audio.AudioType.Music);
         }
@@ -850,7 +931,7 @@ namespace Zitga.Sound
         /// <summary>
         /// Resume all sound fx playing
         /// </summary>
-        public void ResumeAllSounds()
+        public static void ResumeAllSounds()
         {
             ResumeAllAudio(Audio.AudioType.Sound);
         }
@@ -858,12 +939,12 @@ namespace Zitga.Sound
         /// <summary>
         /// Resume all UI sound fx playing
         /// </summary>
-        public void ResumeAllUISounds()
+        public static void ResumeAllUISounds()
         {
             ResumeAllAudio(Audio.AudioType.UISound);
         }
 
-        private void ResumeAllAudio(Audio.AudioType audioType)
+        private static void ResumeAllAudio(Audio.AudioType audioType)
         {
             Dictionary<int, Audio> audioDict = GetAudioTypeDictionary(audioType);
 
@@ -876,10 +957,23 @@ namespace Zitga.Sound
         }
 
         #endregion
-        
-        ~SoundManager()
+
+        public static void DisableIgnoreDuplicateAudio(Audio.AudioType audioType, AudioClip clip)
         {
-            Context.Current.GetService<GlobalUpdateSystem>().Remove(this);
+            Audio duplicateAudio = GetAudio(audioType, true, clip);
+            if (duplicateAudio!=null)
+            {
+                duplicateAudio.IsIgnoreDuplicateAudio = false;
+            }
+        }
+        
+        public static void EnableBasicAudio(Audio.AudioType audioType, AudioClip clip)
+        {
+            Audio duplicateAudio = GetAudio(audioType, true, clip);
+            if (duplicateAudio!=null)
+            {
+                duplicateAudio.IsBasicAudio = true;
+            }
         }
     }
 }
